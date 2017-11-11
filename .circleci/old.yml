@@ -1,4 +1,6 @@
-machine:
+version: 2
+jobs:
+ build:
   timezone: Europe/London
   java:
     version: oraclejdk8
