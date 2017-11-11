@@ -13,6 +13,6 @@ jobs:
             TERM: dumb
       - run:
           name: Assemble & Test (Google Flavour)
-          command: ./gradlew assembleWithGoogle testWithGoogleDebugUnitTest
+          command: ./gradlew assembleDebug testDebug lint
           environment:
             TERM: dumb
