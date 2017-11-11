@@ -10,12 +10,17 @@ general:
         - /home/ubuntu/AndroidCI/app/build/outputs/apk/
 
 dependencies:
-    pre:
-        - echo y | android update sdk --no-ui --all --filter tools,platform-tools,extra-google-m2repository,extra-google-google_play_services,extra-android-support,android-23
-        - echo y | android update sdk --no-ui --all --filter build-tools-26.0.2
-    cache_directories:
-        - /usr/local/android-sdk-linux/tools
-        - /usr/local/android-sdk-linux/build-tools/26.0.2
+  pre:
+    # Android SDK Platform 26
+    - sdkmanager "build-tools;27.0.1" "platforms;android-27”
+    - yes | sdkmanager --licenses
+    
+
+  cache_directories:
+    - /usr/local/android-sdk-linux/platforms/android-27
+    - /usr/local/android-sdk-linux/build-tools/27.0.0
+    - /usr/local/android-sdk-linux/extras/android/m2repository
+
 
 test:
     override:
