@@ -2,8 +2,8 @@ version: 2
 jobs:
   build:
     docker:
-      - image: bitriseio/docker-android
-    working_directory: ~/OceanLife
+      - image: moisesgsaa/android-circleci 
+    working_directory: ~/tmp
     steps:
       - checkout
       - run:
