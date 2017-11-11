@@ -1,18 +1,118 @@
-version: 2
-jobs:
-  build:
+version: 2.0
+
+references:
+
+  workspace_root: &workspace_root
+      ./
+
+  container_config: &container_config
     docker:
       - image: moisesgsaa/android-circleci 
-    working_directory: ~/tmp
+
+    working_directory: *workspace_root
+
+    environment:
+      CODECOV_TOKEN: 4fd7cde1-1a74-43f1-bb66-ebdd5ea25bbd
+      COV_REPORT_LOCATION: app/build/reports/jacoco/testDebugUnitTestCoverage/testDebugUnitTestCoverage.xml
+      TERM: dumb
+      _JAVA_OPTIONS: "-Xmx1400m -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=2 -Djava.util.concurrent.ForkJoinPool.common.parallelism=2"
+
+  attach_workspace: &attach_workspace
+    attach_workspace:
+      at: *workspace_root
+
+  general_cache_key: &general_cache_key
+      key: anysoftkeyboard-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}-{{ checksum "circle.yml" }}-{{ checksum "gradle.properties" }}-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
+jobs:
+
+  build:
+    <<: *container_config
+    resource_class: medium+
     steps:
       - checkout
+
+      - restore_cache:
+          <<: *general_cache_key
+
       - run:
-          name: Assemble & Test (Amazon Flavour)
-          command: ./gradlew assembleWithAmazon testWithAmazonDebugUnitTest
-          environment:
-            TERM: dumb
+          name: Initial build
+          command: ./gradlew assemble
+
+      - persist_to_workspace:
+          root: *workspace_root
+          paths:
+            - .
+
+      - save_cache:
+          <<: *general_cache_key
+          paths:
+            - "~/.gradle"
+            - "~/.m2"
+
+  check:
+    <<: *container_config
+    steps:
+      - *attach_workspace
+
+      - restore_cache:
+          <<: *general_cache_key
+
       - run:
-          name: Assemble & Test (Google Flavour)
-          command: ./gradlew assembleDebug testDebug lint
-          environment:
-            TERM: dumb
+          name: Run Checks
+          command: ./gradlew lint
+
+      - store_artifacts:
+          path: ./app/build/reports/
+          destination: lint_reports/app/
+
+      - store_artifacts:
+          path: ./base/build/reports/
+          destination: lint_reports/base/
+
+  test:
+    <<: *container_config
+    parallelism: 3
+    steps:
+      - *attach_workspace
+
+      - restore_cache:
+          <<: *general_cache_key
+
+      - run:
+          name: Run Tests
+          command: |
+            export TEST_GROUP_INDEX=${CIRCLE_NODE_INDEX}
+            export TEST_GROUPS_COUNT=${CIRCLE_NODE_TOTAL}
+            echo "Running test group ${TEST_GROUP_INDEX} out of ${TEST_GROUPS_COUNT}..."
+            ./gradlew --no-daemon --stacktrace testDebugUnitTest :app:testDebugUnitTestCoverage
+            if [[ -f $COV_REPORT_LOCATION ]]; then
+              curl https://codecov.io/bash -o codecov.sh
+              chmod +x codecov.sh
+              ./codecov.sh -X gcov -X coveragepy -f ${COV_REPORT_LOCATION}
+            fi
+      - store_artifacts:
+          path: app/build/reports/tests/
+          destination: tests_reports/
+
+
+workflows:
+  version: 2
+
+  build_check_tests_deploy:
+    jobs:
+      - build
+      - check:
+          requires:
+            - build
+      - test:
+          requires:
+            - build
+      - deploy:
+          filters:
+            branches:
+              only:
+                - master
+                - release-branch
+          requires:
+            - test
+            - check

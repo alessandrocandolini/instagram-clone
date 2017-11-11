@@ -4,6 +4,14 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
 
+
+sonarqube {
+    properties {
+        property "sonar.java.binaries", "build/intermediates/classes/debug"
+        property "sonar.jacoco.reportPath","build/outputs/code-coverage/connected/coverage.ec"
+    }
+}
+
 android {
     compileSdkVersion 27
     defaultConfig {

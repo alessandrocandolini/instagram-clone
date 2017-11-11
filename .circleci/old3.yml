@@ -1,0 +1,36 @@
+version: 2
+references:
+
+  workspace_root: &workspace_root
+      /opt/workspace/
+
+  container_config: &container_config
+    docker:
+      - image: moisesgsaa/android-circleci 
+
+    working_directory: *workspace_root
+
+    environment:
+      CODECOV_TOKEN: 4fd7cde1-1a74-43f1-bb66-ebdd5ea25bbd
+      COV_REPORT_LOCATION: app/build/reports/jacoco/testDebugUnitTestCoverage/testDebugUnitTestCoverage.xml
+      TERM: dumb
+      _JAVA_OPTIONS: "-Xmx1400m -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=2 -Djava.util.concurrent.ForkJoinPool.common.parallelism=2"
+
+  attach_workspace: &attach_workspace
+    attach_workspace:
+      at: *workspace_root
+
+jobs:
+  build:
+    steps:
+      - checkout
+      - run:
+          name: Assemble & Test (Amazon Flavour)
+          command: ./gradlew assembleWithAmazon testWithAmazonDebugUnitTest
+          environment:
+            TERM: dumb
+      - run:
+          name: Assemble & Test (Google Flavour)
+          command: ./gradlew assembleDebug testDebug lint
+          environment:
+            TERM: dumb
