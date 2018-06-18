@@ -6,7 +6,7 @@ references:
 
   container_config: &container_config
     docker:
-      - image: moisesgsaa/android-circleci 
+      - image: circleci/android:api-26-alpha
 
     working_directory: *workspace_root
 
@@ -26,7 +26,7 @@ jobs:
       - checkout
       - run:
           name: Assemble & Test (Amazon Flavour)
-          command: ./gradlew assembleWithAmazon testWithAmazonDebugUnitTest
+          command: ./gradlew assemble
           environment:
             TERM: dumb
       - run:
